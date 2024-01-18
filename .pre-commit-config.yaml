@@ -34,7 +34,9 @@ repos:
         name: Run Go linters across Go source files
 
   - repo: https://github.com/python-jsonschema/check-jsonschema.git
-    rev: 0.23.0
+    rev: 0.27.3
     hooks:
-      - name: Check the GitHub Workflows for correctness
-        id: check-github-workflows
+      - id: check-dependabot
+        name: Check the Dependabot configuration for correctness
+      - id: check-github-workflows
+        name: Check the GitHub Workflows for correctness

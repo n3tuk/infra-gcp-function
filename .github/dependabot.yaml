@@ -1,0 +1,75 @@
+---
+version: 2
+
+updates:
+  - package-ecosystem: gomod
+    directory: function
+    schedule:
+      interval: weekly
+      day: friday
+      time: '16:00'
+      timezone: 'Europe/London'
+    commit-message:
+      prefix: function
+      include: scope
+    reviewers:
+      - jonathanio
+    labels:
+      - type/dependencies
+      - update/go
+      - release/chore
+      - priority/normal
+
+  - package-ecosystem: gomod
+    directory: infra
+    schedule:
+      interval: weekly
+      day: friday
+      time: '17:00'
+      timezone: 'Europe/London'
+    commit-message:
+      prefix: infra
+      include: scope
+    reviewers:
+      - jonathanio
+    labels:
+      - type/dependencies
+      - update/go
+      - release/chore
+      - priority/normal
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: friday
+      time: '18:00'
+      timezone: 'Europe/London'
+    commit-message:
+      prefix: yarn
+      include: scope
+    reviewers:
+      - jonathanio
+    labels:
+      - type/dependencies
+      - update/yarn
+      - release/chore
+      - priority/normal
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: thursday
+      time: '18:00'
+      timezone: 'Europe/London'
+    commit-message:
+      prefix: actions
+      include: scope
+    reviewers:
+      - jonathanio
+    labels:
+      - type/dependencies
+      - update/github-workflows
+      - release/chore
+      - priority/normal
