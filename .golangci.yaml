@@ -1,0 +1,158 @@
+---
+linters-settings:
+  nolintlint:
+    allow-unused: false
+    require-explanation: true
+    require-specific: true
+  goimports:
+    local-prefixes: github.com/n3tuk/action-pull-requester
+  gofumpt:
+    module-path: github.com/n3tuk/action-pull-requester
+    extra-rules: true
+  gosec:
+    includes: [] # all
+  gosimple:
+    checks: ['all']
+  misspell:
+    locale: US # UK doesn't seem to work very well
+  staticcheck:
+    checks: ['all']
+  stylecheck:
+    checks: ['all']
+  whitespace:
+    multi-if: true
+    multi-func: true
+  decorder:
+    disable-dec-order-check: false
+    disable-init-func-first-check: false
+    disable-dec-num-check: false
+  dogsled:
+    max-blank-identifiers: 1
+  errchkjson:
+    check-error-free-encoding: true
+  gci:
+    sections:
+      - standard
+      - prefix(github.com/n3tuk)
+      - default
+      - dot
+    custom-order: true
+  godox:
+    keywords:
+      - TODO
+      - BUG
+      - FIXME
+      - NOTE
+
+linters:
+  enable:
+    # Set local prefixes in import paths separately from third-party packages
+    - goimports
+    # Check Go package import order and make sure it is always deterministic
+    - gci
+    # A stricter formatter than gofmt
+    - gofumpt
+    # Finds bugs and performance issues and enforces style rule,s
+    - staticcheck
+    # Go static analysis tool to enforce style rules in Go source code
+    - stylecheck
+    # Go static analysis tool to parse and type-checks Go source code
+    - typecheck
+    # Checks that the length of a variable's name matches its scope
+    - varnamelen
+    # Check the maintainability of Go source code
+    - maintidx
+    # Check Go source code that will cause problems with the error wrapping scheme introduced in Go 1.13
+    - errorlint
+    # Checks that exported fields of a struct are annotated with the relevant tag
+    - musttag
+    # Check types passed to the JSON encoding functions for unsupported types, etc.
+    - errchkjson
+    # Check for ignored error responses
+    - errcheck
+    # Check that sentinel errors are prefixed with the Err and error types are suffixed with the Error
+    - errname
+    # Check that errors returned from external packages are wrapped
+    - wrapcheck
+    # Check that .Close() is called for net/http.Response
+    - bodyclose
+    # Check the exhaustiveness of enum switch statements
+    - exhaustive
+    # Check for any pointers exported from a loop
+    - exportloopref
+    # Check for long functions in code (i.e. lines or statements)
+    - funlen
+    # Check for repeated strings in Go code and suggest constants
+    - goconst
+    # Another Go linting tool
+    - gocritic
+    # Check the cyclomatic complexities of functions in Go source code
+    - gocyclo
+    # A vet analyzer to detect magic numbers in Go source code
+    - gomnd
+    # A check that Printf-like functions end with an f in their name
+    - goprintffuncname
+    # A security checker for Go source code
+    - gosec
+    # Check for assignments with too many blank identifiers
+    - dogsled
+    # A linter for Go source code that specialises on simplifying code
+    - gosimple
+    # Examine Go source code and report suspicious constructs
+    - govet
+    # Detect ineffectual assignments in Go source code
+    - ineffassign
+    # Forbids certain types of identifiers
+    - forbidigo
+    # Correct commonly misspelled English words in Go source files
+    - misspell
+    # Go static analysis tool to find naked returns in large functions
+    - nakedret
+    # Detect sending http request without context.Context types
+    - noctx
+    # Check whether the function uses a non-inherited context
+    - contextcheck
+    # Go static analysis tool to find poor //nolint directives
+    - nolintlint
+    # Check for unnecessary type conversions in Go source code
+    - unconvert
+    # Go static analysis tool to check for unused function parameters
+    - unparam
+    # Check Go source code for unused constants, variables, functions, and type
+    - unused
+    # Check for unnecessary newlines at the start and end of functions, if, for, etc.
+    - whitespace
+    # A whitespace linter to try and insert more whitespace in Go source code
+    - wsl
+    # Check declaration order and count of types, constants, variables and functions
+    - decorder
+    # Check for two durations multiplied together
+    - durationcheck
+    # Check for detection of TODO and other comment keywords
+    - godox
+    # Check for slice declarations with non-zero initial length
+    - makezero
+    # Check for no simultaneous return of nil error and an invalid value
+    - nilnil
+    # Check for misuse of Sprintf to construct a host with port in a URL
+    - nosprintfhostport
+    # Check whether err of rows is checked successfully
+    - rowserrcheck
+    # Check that sql.Rows and sql.Stmt are closed
+    - sqlclosecheck
+    # Go static analysis that detects using os.Setenv instead of t.Setenv
+    - tenv
+    # Detect Go test helpers without t.Helper() call
+    - thelper
+    # Check that a separate _test package is used for testing
+    - testpackage
+  disable:
+    # Check if all structure fields are initialized
+    # (this is very noisy and many structs don't need to be complete)
+    - exhaustruct
+    # Check for slice declarations that could potentially be pre-allocated
+    # (should be done as part of performance testing)
+    - prealloc
+
+run:
+  timeout: 1m

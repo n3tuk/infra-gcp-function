@@ -26,3 +26,15 @@ repos:
       - id: prettier
         name: Run prettier to check and format files
         types_or: [json, yaml, markdown]
+
+  - repo: https://github.com/golangci/golangci-lint.git
+    rev: v1.55.2
+    hooks:
+      - id: golangci-lint
+        name: Run Go linters across Go source files
+
+  - repo: https://github.com/python-jsonschema/check-jsonschema.git
+    rev: 0.23.0
+    hooks:
+      - name: Check the GitHub Workflows for correctness
+        id: check-github-workflows

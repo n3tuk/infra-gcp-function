@@ -6,24 +6,30 @@ output: prefixed
 tasks:
   default:
     cmds:
-      - task: build
-      - task: test
+      - task: lint
+      - task: plan
 
   lint:
-    desc: Lint the IaC via golangci-lint
     aliases:
       - l
+    desc: Lint the IaC via golangci-lint
     summary: |-
       Lint to GoLang files for the Infrastuecture as Code using golangci-lint to
       check the code quality, and run prettier and other linters over any JSON
       and YAML files for the infrastructure code.
+    sources:
+      - 'main.go'
+      - '**/*.go'
+      - '../.golangci.yaml'
     cmds:
-      - cmd: echo "linting..."
+      - cmd: |-
+          golangci-lint run \
+            --config=../.golangci.yaml
 
   synth:
-    desc: Build the Infrastucture as Code
     aliases:
       - s
+    desc: Build the Infrastucture as Code
     summary: |-
       Build and run the CDKTF application to synthesise the Terraform JSON
       Infrastructure as Code for testing or deployment.
@@ -31,9 +37,9 @@ tasks:
       - cmd: echo "synthesising..."
 
   plan:
-    desc: Plan the Infrastucture as Code
     aliases:
       - p
+    desc: Plan the Infrastucture as Code
     summary: |-
       Build and run the CDKTF application to synthesise the Terraform JSON
       Infrastructure as Code, then run a plan against it to show the expected
@@ -42,9 +48,9 @@ tasks:
       - cmd: echo "synthesising..."
 
   deploy:
-    desc: Deploy the Infrastucture as Code
     aliases:
       - s
+    desc: Deploy the Infrastucture as Code
     summary: |-
       Build and run the CDKTF application to synthesise the Terraform JSON
       Infrastructure as Code, then run a deploy against it to deploy the changes
@@ -53,9 +59,9 @@ tasks:
       - cmd: echo "synthesising..."
 
   clean:
-    desc: Clean up the Infrastructure temporary files and directories
     aliases:
       - c
+    desc: Clean up the Infrastructure temporary files and directories
     summary: |-
       Clean up any known temporary files and directories within the repository
       that have been created either via the Infrastruce as Code management with

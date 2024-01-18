@@ -10,18 +10,18 @@ tasks:
       - task: test
 
   build:
-    desc: Build the Cloud Function
     aliases:
       - b
+    desc: Build the Cloud Function
     summary: |-
       Build the Cloud Function so it can be tested or packaged.
     cmds:
       - cmd: echo "building..."
 
   test:
-    desc: Test the Cloud Function
     aliases:
       - t
+    desc: Test the Cloud Function
     summary: |-
       Test the Cloud Function to validation that is will operate as expected.
     deps:
@@ -30,16 +30,26 @@ tasks:
       - cmd: echo "testing..."
 
   lint:
-    desc: Lint the Cloud Function via golangci-lint
     aliases:
       - l
+    desc: Lint the Cloud Function via golangci-lint
+    summary: |-
+      Lint to GoLang files for the Cloud Function using golangci-lint to check
+      the code quality, and run prettier and other linters over any JSON and
+      YAML files for the infrastructure code.
+    sources:
+      - 'main.go'
+      - '**/*.go'
+      - '../.golangci.yaml'
     cmds:
-      - cmd: echo "linting..."
+      - cmd: |-
+          golangci-lint run \
+            --config=../.golangci.yaml
 
   clean:
-    desc: Clean up the Cloud Function temporary files and directories
     aliases:
       - c
+    desc: Clean up the Cloud Function temporary files and directories
     summary: |-
       Clean up any known temporary files and directories within the repository
       that have been created either by the Cloud Function development.
