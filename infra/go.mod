@@ -1,6 +1,6 @@
 module github.com/n3tuk/infra-gcp-function/infra
 
-go 1.18
+go 1.21
 
 require github.com/aws/constructs-go/constructs/v10 v10.3.0
 
