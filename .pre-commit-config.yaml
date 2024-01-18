@@ -19,3 +19,10 @@ repos:
         name: Check all trailing whitespace is removed
       - id: end-of-file-fixer
         name: Check all files end in a new-line only
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        name: Run prettier to check and format files
+        types_or: [json, yaml, markdown]
