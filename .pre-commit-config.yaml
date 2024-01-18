@@ -3,8 +3,8 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks.git
     rev: v4.4.0
     hooks:
-      # - id: no-commit-to-branch
-      #   name: Check this commit is not to the main/master branch
+      - id: no-commit-to-branch
+        name: Check this commit is not to the main/master branch
       - id: check-merge-conflict
         name: Check for merge conflicts before committing
       - id: check-case-conflict
