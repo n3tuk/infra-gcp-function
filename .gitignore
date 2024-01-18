@@ -6,3 +6,8 @@ node_modules/*
 
 # Ignore the prettier cache
 .prettier.cache
+
+# Ignore CDKTF processing directories
+infra/.gen/*
+infra/generated/*
+deploy/*

@@ -2,5 +2,8 @@
   "devDependencies": {
     "prettier": "^3.2.4",
     "prettier-plugin-go-template": "^0.0.15"
+  },
+  "dependencies": {
+    "cdktf-cli": "^0.20.1"
   }
 }

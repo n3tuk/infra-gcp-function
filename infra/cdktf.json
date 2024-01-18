@@ -1,0 +1,26 @@
+{
+  "language": "go",
+  "app": "go run main.go",
+  "codeMakerOutput": "generated",
+  "projectId": "9faa7b57-8664-43bb-9156-a184e7442ecc",
+  "sendCrashReports": "false",
+  "terraformProviders": [
+    {
+      "name": "google",
+      "source": "hashicorp/google",
+      "version": "~> 5.12.0"
+    },
+    {
+      "name": "random",
+      "source": "hashicorp/random",
+      "version": "~> 3.6.0"
+    },
+    {
+      "name": "cloudfare",
+      "source": "cloudfare/cloudfare",
+      "version": "~> 4.22.0"
+    }
+  ],
+  "terraformModules": [],
+  "context": {}
+}

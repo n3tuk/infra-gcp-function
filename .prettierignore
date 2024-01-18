@@ -6,3 +6,14 @@ node_modules/*
 
 # Ignore prettier cache file
 .prettier.cache
+
+# Ignore CDKTF processing directories
+infra/.gen/*
+infra/generated/*
+deploy/*
+
+# Ignore any GoLang files as GoLang-based tools will manage these
+**/*.go
+**/go.mod
+**/go.sum
+**/go.work
