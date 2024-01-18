@@ -1,5 +1,8 @@
 # Ignore any Node-related temporary files
 node_modules/*
 
+# Ignore taskfile processing directory
+.task/*
+
 # Ignore prettier cache file
 .prettier.cache

@@ -1,0 +1,65 @@
+---
+version: 3
+interval: 1000ms
+output: prefixed
+
+tasks:
+  default:
+    cmds:
+      - task: build
+      - task: test
+
+  lint:
+    desc: Lint the IaC via golangci-lint
+    aliases:
+      - l
+    summary: |-
+      Lint to GoLang files for the Infrastuecture as Code using golangci-lint to
+      check the code quality, and run prettier and other linters over any JSON
+      and YAML files for the infrastructure code.
+    cmds:
+      - cmd: echo "linting..."
+
+  synth:
+    desc: Build the Infrastucture as Code
+    aliases:
+      - s
+    summary: |-
+      Build and run the CDKTF application to synthesise the Terraform JSON
+      Infrastructure as Code for testing or deployment.
+    cmds:
+      - cmd: echo "synthesising..."
+
+  plan:
+    desc: Plan the Infrastucture as Code
+    aliases:
+      - p
+    summary: |-
+      Build and run the CDKTF application to synthesise the Terraform JSON
+      Infrastructure as Code, then run a plan against it to show the expected
+      changes to the infrastructure.
+    cmds:
+      - cmd: echo "synthesising..."
+
+  deploy:
+    desc: Deploy the Infrastucture as Code
+    aliases:
+      - s
+    summary: |-
+      Build and run the CDKTF application to synthesise the Terraform JSON
+      Infrastructure as Code, then run a deploy against it to deploy the changes
+      to the infrastructure to the environments.
+    cmds:
+      - cmd: echo "synthesising..."
+
+  clean:
+    desc: Clean up the Infrastructure temporary files and directories
+    aliases:
+      - c
+    summary: |-
+      Clean up any known temporary files and directories within the repository
+      that have been created either via the Infrastruce as Code management with
+      CDKTF.
+    run: once
+    cmds:
+      - cmd: rm -rf .task

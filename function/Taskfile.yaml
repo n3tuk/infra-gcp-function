@@ -1,0 +1,48 @@
+---
+version: 3
+interval: 1000ms
+output: prefixed
+
+tasks:
+  default:
+    cmds:
+      - task: build
+      - task: test
+
+  build:
+    desc: Build the Cloud Function
+    aliases:
+      - b
+    summary: |-
+      Build the Cloud Function so it can be tested or packaged.
+    cmds:
+      - cmd: echo "building..."
+
+  test:
+    desc: Test the Cloud Function
+    aliases:
+      - t
+    summary: |-
+      Test the Cloud Function to validation that is will operate as expected.
+    deps:
+      - task: build
+    cmds:
+      - cmd: echo "testing..."
+
+  lint:
+    desc: Lint the Cloud Function via golangci-lint
+    aliases:
+      - l
+    cmds:
+      - cmd: echo "linting..."
+
+  clean:
+    desc: Clean up the Cloud Function temporary files and directories
+    aliases:
+      - c
+    summary: |-
+      Clean up any known temporary files and directories within the repository
+      that have been created either by the Cloud Function development.
+    run: once
+    cmds:
+      - cmd: rm -rf .task

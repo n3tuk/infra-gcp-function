@@ -1,0 +1,67 @@
+---
+version: 3
+interval: 1000ms
+output: prefixed
+
+includes:
+  function:
+    taskfile: function/Taskfile.yaml
+  infra:
+    taskfile: infra/Taskfile.yaml
+
+tasks:
+  default:
+    cmds:
+      - task: function:build
+      - task: function:test
+      - task: infra:plan
+
+  build:
+    desc: Build the Cloud Function
+    aliases:
+      - b
+    summary: |-
+      Build the Cloud Function so it can be tested or packaged.
+    cmds:
+      - task: function:build
+
+  lint:
+    desc: Check linting via golangci-lint
+    summary: |-
+      Make sure that both the Cloud Function and the Infrastruce as Code is
+      correctly linted and formatted using standard tooling (including
+      golangci-lint, prettier, and yamllint).
+    aliases:
+      - l
+    cmds:
+      - task: prettier
+      - task: function:lint
+      - task: infra:lint
+
+  prettier:
+    desc: Run prettier over supported files to standadise formatting
+    cmds:
+      - cmd: |-
+          node_modules/.bin/prettier \
+            --check \
+            --config .prettierrc \
+            --no-editorconfig \
+            --cache \
+            --cache-location .prettier.cache \
+            --cache-strategy content \
+            "**/*.{json,yaml,md}" .prettierrc
+
+  clean:
+    desc: Clean up the temporary files and directories
+    aliases:
+      - c
+    summary: |-
+      Clean up any known temporary files and directories within the repository
+      that have been created either via the Cloud Function development and
+      deployment, or the Infrastruce as Code management with CDKTF.
+    run: once
+    cmds:
+      - task: function:clean
+      - task: infra:clean
+      - cmd: rm -rf .prettier
+      - cmd: rm -rf .task
