@@ -6,8 +6,10 @@ output: prefixed
 includes:
   function:
     taskfile: function/Taskfile.yaml
+    dir: function/
   infra:
     taskfile: infra/Taskfile.yaml
+    dir: infra/
 
 tasks:
   default:

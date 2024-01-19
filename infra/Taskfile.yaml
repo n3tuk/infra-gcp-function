@@ -24,7 +24,8 @@ tasks:
     cmds:
       - cmd: |-
           golangci-lint run \
-            --config=../.golangci.yaml
+            --config=../.golangci.yaml \
+            --path-prefix=infra
 
   synth:
     aliases:

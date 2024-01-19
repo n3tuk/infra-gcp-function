@@ -5,9 +5,9 @@ linters-settings:
     require-explanation: true
     require-specific: true
   goimports:
-    local-prefixes: github.com/n3tuk/action-pull-requester
+    local-prefixes: github.com/n3tuk/infra-gcp-function
   gofumpt:
-    module-path: github.com/n3tuk/action-pull-requester
+    module-path: github.com/n3tuk/infra-gcp-function
     extra-rules: true
   gosec:
     includes: [] # all
