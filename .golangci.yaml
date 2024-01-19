@@ -58,8 +58,6 @@ linters:
     - stylecheck
     # Go static analysis tool to parse and type-checks Go source code
     - typecheck
-    # Checks that the length of a variable's name matches its scope
-    - varnamelen
     # Check the maintainability of Go source code
     - maintidx
     # Check Go source code that will cause problems with the error wrapping scheme introduced in Go 1.13
@@ -153,6 +151,8 @@ linters:
     # Check for slice declarations that could potentially be pre-allocated
     # (should be done as part of performance testing)
     - prealloc
+    # Checks that the length of a variable's name matches its scope
+    - varnamelen
 
 run:
   timeout: 1m
