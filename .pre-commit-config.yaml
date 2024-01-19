@@ -3,8 +3,8 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks.git
     rev: v4.4.0
     hooks:
-      # - id: no-commit-to-branch
-      #   name: Check this commit is not to the main/master branch
+      - id: no-commit-to-branch
+        name: Check this commit is not to the main/master branch
       - id: check-merge-conflict
         name: Check for merge conflicts before committing
       - id: check-case-conflict
@@ -30,8 +30,14 @@ repos:
   - repo: https://github.com/golangci/golangci-lint.git
     rev: v1.55.2
     hooks:
-      - id: golangci-lint
-        name: Run Go linters across Go source files
+      - id: golangci-lint-full
+        name: Run Go linters across function/ source files
+        files: ^function/
+        entry: bash -c 'cd function/ && golangci-lint run --fix --config=../.golangci.yaml --path-prefix=function'
+      - id: golangci-lint-full
+        name: Run Go linters across infra/ source files
+        files: ^infra/
+        entry: bash -c 'cd infra/ && golangci-lint run --fix --config=../.golangci.yaml --path-prefix=infra'
 
   - repo: https://github.com/python-jsonschema/check-jsonschema.git
     rev: 0.27.3

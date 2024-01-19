@@ -6,8 +6,10 @@ output: prefixed
 includes:
   function:
     taskfile: function/Taskfile.yaml
+    dir: function/
   infra:
     taskfile: infra/Taskfile.yaml
+    dir: infra/
 
 tasks:
   default:
@@ -43,7 +45,7 @@ tasks:
     cmds:
       - cmd: |-
           node_modules/.bin/prettier \
-            --check \
+            --check --write \
             --config .prettierrc \
             --no-editorconfig \
             --cache \
