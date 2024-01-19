@@ -43,7 +43,7 @@ tasks:
     cmds:
       - cmd: |-
           node_modules/.bin/prettier \
-            --check \
+            --check --write \
             --config .prettierrc \
             --no-editorconfig \
             --cache \
