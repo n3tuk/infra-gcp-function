@@ -83,6 +83,20 @@ tasks:
             -o=coverage.html
         silent: true
 
+  serve:
+    aliases:
+      - s
+    desc: Service the Cloud Function
+    summary: |-
+      Start and serve the Cloud Function locally so it can be accessed for testing.
+    sources:
+      - '**/*.go'
+    env:
+      FUNCTION_TARGET: server
+      LOCAL_ONLY: true
+    cmds:
+      - cmd: go run cmd/main.go
+
   clean:
     aliases:
       - c
@@ -92,5 +106,5 @@ tasks:
       that have been created either by the Cloud Function development.
     run: once
     cmds:
-      - cmd: rm -rf coverage/*/* coverage.out
+      - cmd: rm -rf coverage/*/* coverage.out coverage.html
       - cmd: rm -rf .task

@@ -1,11 +1,15 @@
 # Ignore any Node-related temporary files
-node_modules/*
+node_modules
 
 # Ignore taskfile processing directory
-.task/*
+.task
 
 # Ignore the prettier cache
 .prettier.cache
+
+# Ignore function processing files
+function/coverage.out
+function/coverage.html
 
 # Ignore CDKTF processing directories
 infra/.gen/*
