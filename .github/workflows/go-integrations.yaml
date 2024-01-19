@@ -14,6 +14,35 @@ permissions:
   security-events: write
 
 jobs:
+  linting:
+    strategy:
+      matrix:
+        module:
+          - 'function'
+          - 'infra'
+        platform:
+          - ubuntu-latest
+      fail-fast: false
+
+    name: golangci Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ matrix.module }}/go.mod
+          cache-dependency-path: ${{ matrix.module }}/go.sum
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          working-directory: ${{ matrix.module }}
+          args: --config=../.golangci.yaml --path-prefix=${{ matrix.module }}
+
   testing:
     strategy:
       matrix:
@@ -21,12 +50,14 @@ jobs:
           - '1.19'
           - '1.20'
           - '1.21'
-        folder:
+        module:
           - 'function'
           - 'infra'
         platform:
           - 'ubuntu-latest'
       fail-fast: false
+    needs:
+      - linting
 
     name: Go Tests
     runs-on: ${{ matrix.platform }}
@@ -38,51 +69,20 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.version }}
-          cache-dependency-path: ${{ matrix.folder }}/go.sum
+          cache-dependency-path: ${{ matrix.module }}/go.sum
 
       - name: Verify the Go modules
-        working-directory: ${{ matrix.folder }}
+        working-directory: ${{ matrix.module }}
         run: go mod verify
 
       - name: Download the Go modules
-        working-directory: ${{ matrix.folder }}
+        working-directory: ${{ matrix.module }}
         run: go mod download
 
       - name: Run standard tests
-        working-directory: ${{ matrix.folder }}
+        working-directory: ${{ matrix.module }}
         run: go test -v ./...
 
       - name: Run race tests
-        working-directory: ${{ matrix.folder }}
+        working-directory: ${{ matrix.module }}
         run: go test -v -race ./...
-
-  linting:
-    strategy:
-      matrix:
-        folder:
-          - 'function'
-          - 'infra'
-        platform:
-          - ubuntu-latest
-      fail-fast: false
-
-    name: golangci Linting
-    runs-on: ubuntu-latest
-    needs:
-      - testing
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: ${{ matrix.folder }}/go.mod
-          cache-dependency-path: ${{ matrix.folder }}/go.sum
-
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: latest
-          working-directory: ${{ matrix.folder }}
-          args: --config=../.golangci.yaml --path-prefix=${{ matrix.folder }}
