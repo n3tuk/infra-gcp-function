@@ -123,5 +123,5 @@ tasks:
       CDKTF.
     run: once
     cmds:
-      - cmd: rm -rf coverage/*/* coverage.out
+      - cmd: rm -rf coverage/*/* coverage.out coverage.html
       - cmd: rm -rf .task
