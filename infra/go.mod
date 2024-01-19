@@ -10,7 +10,12 @@ require github.com/aws/jsii-runtime-go v1.94.0
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
-	github.com/cdktf/cdktf-provider-cloudflare-go/cloudflare/v11 v11.0.0 // indirect
-	github.com/cdktf/cdktf-provider-google-go/google/v13 v13.1.0 // indirect
-	github.com/cdktf/cdktf-provider-random-go/random/v11 v11.0.0 // indirect
+	github.com/fatih/color v1.16.0 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/yuin/goldmark v1.4.13 // indirect
+	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
+	golang.org/x/mod v0.14.0 // indirect
+	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/tools v0.16.1 // indirect
 )

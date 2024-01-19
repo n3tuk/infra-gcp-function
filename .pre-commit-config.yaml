@@ -33,11 +33,11 @@ repos:
       - id: golangci-lint-full
         name: Run Go linters across function/ source files
         files: ^function/
-        entry: bash -c 'cd function/ && golangci-lint run --fix --config=../.golangci.yaml --prefix=function'
+        entry: bash -c 'cd function/ && golangci-lint run --fix --config=../.golangci.yaml --path-prefix=function'
       - id: golangci-lint-full
         name: Run Go linters across infra/ source files
         files: ^infra/
-        entry: bash -c 'cd infra/ && golangci-lint run --fix --config=../.golangci.yaml --prefix=infra'
+        entry: bash -c 'cd infra/ && golangci-lint run --fix --config=../.golangci.yaml --path-prefix=infra'
 
   - repo: https://github.com/python-jsonschema/check-jsonschema.git
     rev: 0.27.3

@@ -9,6 +9,19 @@ tasks:
       - task: lint
       - task: plan
 
+  fmt:
+    aliases:
+      - f
+    desc: Properly format all .go files for the CDKTF Infrastructure as Code
+    summary: |-
+      Properly fomrmat all of the .go files for the CDKTF Infrastructure as Code
+      using go (this is a write-based action which will make changes to all .go
+      files, if required).
+    sources:
+      - '**/*.go'
+    cmds:
+      - cmd: go fmt ./...
+
   lint:
     aliases:
       - l
@@ -17,6 +30,8 @@ tasks:
       Lint to GoLang files for the Infrastuecture as Code using golangci-lint to
       check the code quality, and run prettier and other linters over any JSON
       and YAML files for the infrastructure code.
+    deps:
+      - task: fmt
     sources:
       - 'main.go'
       - '**/*.go'
@@ -27,6 +42,37 @@ tasks:
             --config=../.golangci.yaml \
             --path-prefix=infra
 
+  test:
+    aliases:
+      - t
+    desc: Test the CDKTF Infrastructure as Code
+    summary: |-
+      Test the CDKTF Infrastructure as Code to validation that is will operate
+      as expected.
+    deps:
+      - task: lint
+    sources:
+      - '**/*.go'
+    cmds:
+      # If this taskfile is being run inside of tmux, tell tmux to send the
+      # Enter key to the same pane as it is running in so that it exits
+      # scrolling mode and starts refreshing the screen as new tests are run
+      - cmd: |-
+          test -n "$TMUX_PANE" && tmux send-keys -t $TMUX_PANE Enter
+        silent: true
+      - cmd: |-
+          go test -v ./... \
+            -covermode=count \
+            -coverprofile=coverage.out
+      - cmd: |-
+          go tool cover \
+            -func=coverage.out
+      - cmd: |-
+          go tool cover \
+            -html=coverage.out \
+            -o=coverage.html
+        silent: true
+
   synth:
     aliases:
       - s
@@ -34,9 +80,13 @@ tasks:
     summary: |-
       Build and run the CDKTF application to synthesise the Terraform JSON
       Infrastructure as Code for testing or deployment.
+    deps:
+      - task: lint
     cmds:
       - cmd: echo "synthesising..."
 
+  # plan does not require synth as a dependency as plan will re-run the
+  # synthesis of the IaC when it runs anyway
   plan:
     aliases:
       - p
@@ -45,6 +95,8 @@ tasks:
       Build and run the CDKTF application to synthesise the Terraform JSON
       Infrastructure as Code, then run a plan against it to show the expected
       changes to the infrastructure.
+    deps:
+      - task: lint
     cmds:
       - cmd: echo "synthesising..."
 
@@ -56,6 +108,8 @@ tasks:
       Build and run the CDKTF application to synthesise the Terraform JSON
       Infrastructure as Code, then run a deploy against it to deploy the changes
       to the infrastructure to the environments.
+    deps:
+      - task: lint
     cmds:
       - cmd: echo "synthesising..."
 
@@ -69,4 +123,5 @@ tasks:
       CDKTF.
     run: once
     cmds:
+      - cmd: rm -rf coverage/*/* coverage.out
       - cmd: rm -rf .task

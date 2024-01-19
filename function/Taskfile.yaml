@@ -9,12 +9,47 @@ tasks:
       - task: build
       - task: test
 
+  fmt:
+    aliases:
+      - f
+    desc: Properly format all .go files for the Cloud Function
+    summary: |-
+      Properly fomrmat all of the .go files for the Cloud Function using go
+      (this is a write-based action which will make changes to all .go files, if
+      required).
+    sources:
+      - '**/*.go'
+    cmds:
+      - cmd: go fmt ./...
+
+  lint:
+    aliases:
+      - l
+    desc: Lint the Cloud Function via golangci-lint
+    summary: |-
+      Lint to GoLang files for the Cloud Function using golangci-lint to check
+      the code quality, and run prettier and other linters over any JSON and
+      YAML files for the infrastructure code.
+    deps:
+      - task: fmt
+    sources:
+      - 'main.go'
+      - '**/*.go'
+      - '../.golangci.yaml'
+    cmds:
+      - cmd: |-
+          golangci-lint run \
+            --config=../.golangci.yaml \
+            --path-prefix=function
+
   build:
     aliases:
       - b
     desc: Build the Cloud Function
     summary: |-
       Build the Cloud Function so it can be tested or packaged.
+    deps:
+      - task: lint
     cmds:
       - cmd: echo "building..."
 
@@ -26,26 +61,27 @@ tasks:
       Test the Cloud Function to validation that is will operate as expected.
     deps:
       - task: build
-    cmds:
-      - cmd: echo "testing..."
-
-  lint:
-    aliases:
-      - l
-    desc: Lint the Cloud Function via golangci-lint
-    summary: |-
-      Lint to GoLang files for the Cloud Function using golangci-lint to check
-      the code quality, and run prettier and other linters over any JSON and
-      YAML files for the infrastructure code.
     sources:
-      - 'main.go'
       - '**/*.go'
-      - '../.golangci.yaml'
     cmds:
+      # If this taskfile is being run inside of tmux, tell tmux to send the
+      # Enter key to the same pane as it is running in so that it exits
+      # scrolling mode and starts refreshing the screen as new tests are run
       - cmd: |-
-          golangci-lint run \
-            --config=../.golangci.yaml \
-            --path-prefix=function
+          test -n "$TMUX_PANE" && tmux send-keys -t $TMUX_PANE Enter
+        silent: true
+      - cmd: |-
+          go test -v ./... \
+            -covermode=count \
+            -coverprofile=coverage.out
+      - cmd: |-
+          go tool cover \
+            -func=coverage.out
+      - cmd: |-
+          go tool cover \
+            -html=coverage.out \
+            -o=coverage.html
+        silent: true
 
   clean:
     aliases:
@@ -56,4 +92,5 @@ tasks:
       that have been created either by the Cloud Function development.
     run: once
     cmds:
+      - cmd: rm -rf coverage/*/* coverage.out
       - cmd: rm -rf .task
