@@ -7,25 +7,32 @@ import (
 	"time"
 
 	f "github.com/GoogleCloudPlatform/functions-framework-go/functions"
+	"github.com/google/uuid"
 )
 
 type (
 	AliveResponse struct {
-		Type  string `json:"type"`
-		Alive bool   `json:"alive"`
-		Date  string `json:"date"`
+		Type  string    `json:"type"`
+		Alive bool      `json:"alive"`
+		Date  string    `json:"date,omitempty"`
+		Run   uuid.UUID `json:"run,omitempty"`
 	}
 
 	ErrorResponse struct {
-		Type   string `json:"type"`
-		Status int    `json:"status"`
-		Error  string `json:"error"`
+		Type   string    `json:"type"`
+		Status int       `json:"status"`
+		Error  string    `json:"error,omitempty"`
+		Run    uuid.UUID `json:"run,omitempty"`
 	}
 )
 
-var server *http.ServeMux
+var (
+	server *http.ServeMux
+	id     uuid.UUID
+)
 
 func init() {
+	id, _ = uuid.NewRandom()
 	server = NewServer()
 
 	f.HTTP("server", request)
@@ -64,6 +71,7 @@ func errorNotFound(w http.ResponseWriter) {
 		Type:   "error",
 		Status: http.StatusNotFound,
 		Error:  "File Not Found",
+		Run:    id,
 	}
 
 	newError(w, e, http.StatusNotFound)
@@ -76,6 +84,7 @@ func errorInternalServer(w http.ResponseWriter, err error) {
 		Type:   "error",
 		Status: http.StatusInternalServerError,
 		Error:  fmt.Sprintf("Internal Server Error: %s", err),
+		Run:    id,
 	}
 
 	newError(w, e, http.StatusNotFound)
@@ -102,6 +111,7 @@ func alive(w http.ResponseWriter, r *http.Request) {
 		Type:  "alive",
 		Alive: true,
 		Date:  time.Now().Format(time.RFC3339),
+		Run:   id,
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")

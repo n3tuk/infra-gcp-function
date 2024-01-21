@@ -17,3 +17,7 @@ deploy/*
 **/go.mod
 **/go.sum
 **/go.work
+**/.coverage
+**/.coverage.out
+**/.coverage.html
+**/report.xml

@@ -3,10 +3,12 @@ version: 3
 interval: 1000ms
 output: prefixed
 
+vars:
+  coverage: .coverage
+
 tasks:
   default:
     cmds:
-      - task: build
       - task: test
 
   fmt:
@@ -30,8 +32,6 @@ tasks:
       Lint to GoLang files for the Cloud Function using golangci-lint to check
       the code quality, and run prettier and other linters over any JSON and
       YAML files for the infrastructure code.
-    deps:
-      - task: fmt
     sources:
       - 'main.go'
       - '**/*.go'
@@ -40,47 +40,41 @@ tasks:
       - cmd: |-
           golangci-lint run \
             --config=../.golangci.yaml \
-            --path-prefix=function
-
-  build:
-    aliases:
-      - b
-    desc: Build the Cloud Function
-    summary: |-
-      Build the Cloud Function so it can be tested or packaged.
-    deps:
-      - task: lint
-    cmds:
-      - cmd: echo "building..."
+            --path-prefix=function \
+            --verbose
 
   test:
     aliases:
       - t
-    desc: Test the Cloud Function
+    desc: Run the Unit Tests against the Cloud Function(s)
     summary: |-
-      Test the Cloud Function to validation that is will operate as expected.
-    deps:
-      - task: build
+      Test the Cloud Function via Unit Tests to validate that is will operate as
+      expected.
     sources:
       - '**/*.go'
     cmds:
       # If this taskfile is being run inside of tmux, tell tmux to send the
-      # Enter key to the same pane as it is running in so that it exits
-      # scrolling mode and starts refreshing the screen as new tests are run
+      # Enter key to the same pane as this is running in so that it exits
+      # scrolling mode as the new tests are run.
+      # Stops me accidentally looking at the old tests and wondering why the fix
+      # didn't work!
       - cmd: |-
-          test -n "$TMUX_PANE" && tmux send-keys -t $TMUX_PANE Enter
+          ( test -n "$TMUX_PANE" \
+            && tmux send-keys -t $TMUX_PANE Enter
+          ) || true
         silent: true
       - cmd: |-
-          go test -v ./... \
-            -covermode=count \
-            -coverprofile=coverage.out
+          mkdir -p {{ .coverage }}
+        silent: true
       - cmd: |-
-          go tool cover \
-            -func=coverage.out
+          go test -v -cover ./... \
+            -args -test.gocoverdir="{{ .TASKFILE_DIR }}/{{ .coverage }}"
       - cmd: |-
-          go tool cover \
-            -html=coverage.out \
-            -o=coverage.html
+          go tool covdata func -i {{ .coverage }}
+      # Convert all the data into an HTML page for easy viewing of code coverage
+      - cmd: |-
+          go tool covdata textfmt -i {{ .coverage }} -o coverage.out
+          go tool cover -html coverage.out -o coverage.html
         silent: true
 
   serve:
@@ -89,22 +83,24 @@ tasks:
     desc: Service the Cloud Function
     summary: |-
       Start and serve the Cloud Function locally so it can be accessed for testing.
+    deps:
+      - task: lint
+      - task: test
     sources:
       - '**/*.go'
     env:
       FUNCTION_TARGET: server
       LOCAL_ONLY: true
     cmds:
-      - cmd: go run cmd/main.go
+      - cmd: |-
+          go run cmd/main.go
 
   clean:
-    aliases:
-      - c
-    desc: Clean up the Cloud Function temporary files and directories
+    desc: Clean up the temporary files and directories for the Cloud Function
     summary: |-
       Clean up any known temporary files and directories within the repository
       that have been created either by the Cloud Function development.
     run: once
     cmds:
-      - cmd: rm -rf coverage/*/* coverage.out coverage.html
+      - cmd: rm -rf {{ .coverage }} coverage.{out,html}
       - cmd: rm -rf .task

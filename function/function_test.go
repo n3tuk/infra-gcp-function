@@ -50,6 +50,7 @@ func TestNotFound(t *testing.T) {
 	assert.Equal(t, contentType, w.Header().Get("Content-Type"), "The server should be responding with the Content-Type as '%s', but found '%s'", contentType, w.Header().Get("Content-Type"))
 	assert.Equal(t, "error", e.Type, "The response should set with the Type of 'error', but found '%v'", e.Type)
 	assert.Equal(t, http.StatusNotFound, e.Status, "The response should be set with the Status as %d, but found %d", http.StatusNotFound, e.Status)
+	assert.NotEmpty(t, e.Run, "The response should be set with the Run UUID value, but it was empty")
 }
 
 func TestAlive(t *testing.T) {
@@ -71,4 +72,6 @@ func TestAlive(t *testing.T) {
 	assert.Equal(t, contentType, w.Header().Get("Content-Type"), "The server should be responding with the Content-Type as '%s', but found '%s'", contentType, w.Header().Get("Content-Type"))
 	assert.Equal(t, "alive", a.Type, "The response should be set with the Type of 'alive', but found '%v'", a.Type)
 	assert.True(t, a.Alive, "The response should be set with Alive as true, but found %v", a.Alive)
+	assert.NotEmpty(t, a.Date, "The response should be set with the Date/Time, but it was empty")
+	assert.NotEmpty(t, a.Run, "The response should be set with the Run UUID value, but it was empty")
 }
