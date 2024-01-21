@@ -1,22 +1,20 @@
 package main
 
 import (
-	"github.com/aws/constructs-go/constructs/v10"
+	"github.com/n3tuk/infra-gcp-function/infra/stacks/bucket"
+
 	"github.com/hashicorp/terraform-cdk-go/cdktf"
 )
 
-func NewMyStack(scope constructs.Construct, id string) cdktf.TerraformStack {
-	stack := cdktf.NewTerraformStack(scope, &id)
-
-	// The code that defines your stack goes here
-
-	return stack
-}
-
 func main() {
-	app := cdktf.NewApp(nil)
+	app := cdktf.NewApp(
+		&cdktf.AppConfig{},
+	)
 
-	NewMyStack(app, "infra")
+	bucket.NewBucket(app, &bucket.BucketOptions{
+		Name:    "n3tuk-gcf-assets",
+		Project: "n3tuk-learning-67b95f",
+	})
 
 	app.Synth()
 }

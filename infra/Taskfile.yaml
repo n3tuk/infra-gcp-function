@@ -3,6 +3,16 @@ version: 3
 interval: 1000ms
 output: prefixed
 
+vars:
+  base: github.com/n3tuk/infra-gcp-function
+  deploy: ../dist/deploy
+  coverage: .coverage
+  modules:
+    sh: |-
+      go list ./... \
+      | grep -v infra/generated \
+      | sed -e 's|^{{ .base }}/||'
+
 tasks:
   default:
     cmds:
@@ -14,13 +24,19 @@ tasks:
       - f
     desc: Properly format all .go files for the CDKTF Infrastructure as Code
     summary: |-
-      Properly fomrmat all of the .go files for the CDKTF Infrastructure as Code
+      Properly format all of the .go files for the CDKTF Infrastructure as Code
       using go (this is a write-based action which will make changes to all .go
       files, if required).
+    # Configure both the sources and the command to exclude the pre-generated
+    # modules created by CDKTF as there is no need to run fmt against this code
     sources:
       - '**/*.go'
+      - exclude: 'generated/**/*.go'
     cmds:
-      - cmd: go fmt ./...
+      - for:
+          var: modules
+          as: module
+        cmd: go fmt {{.base }}/{{ .module }}
 
   lint:
     aliases:
@@ -32,15 +48,16 @@ tasks:
       and YAML files for the infrastructure code.
     deps:
       - task: fmt
+    # Like for the fmt task above, ensure we do not process anything under the
+    # pre-generated modules created by CDKTF, as these do not need to be checked
     sources:
-      - 'main.go'
-      - '**/*.go'
       - '../.golangci.yaml'
+      - '**/*.go'
+      - exclude: 'generated/**/*.go'
     cmds:
       - cmd: |-
           golangci-lint run \
-            --config=../.golangci.yaml \
-            --path-prefix=infra
+            --config=../.golangci.yaml --path-prefix=infra
 
   test:
     aliases:
@@ -55,73 +72,118 @@ tasks:
       - '**/*.go'
     cmds:
       # If this taskfile is being run inside of tmux, tell tmux to send the
-      # Enter key to the same pane as it is running in so that it exits
-      # scrolling mode and starts refreshing the screen as new tests are run
-      - cmd: |-
-          test -n "$TMUX_PANE" && tmux send-keys -t $TMUX_PANE Enter
+      # Enter key to the same pane as this is running in so that it exits
+      # scrolling mode as the new tests are run.
+      # Stops me accidentally looking at the old tests and wondering why the fix
+      # didn't work!
+      - cmd: test -n "$TMUX_PANE" && tmux send-keys -t $TMUX_PANE Enter
         silent: true
+      - cmd: mkdir -p {{ .coverage }}
+        silent: true
+      - for:
+          var: modules
+          as: module
+        cmd: |-
+          go test -v -cover {{.base }}/{{ .module }} \
+            -args -test.gocoverdir="{{ .TASKFILE_DIR }}/{{ .coverage }}"
       - cmd: |-
-          go test -v ./... \
-            -covermode=count \
-            -coverprofile=coverage.out
+          go tool covdata func -i {{ .coverage }}
+      # Convert all the data into an HTML page for easy viewing of code coverage
       - cmd: |-
-          go tool cover \
-            -func=coverage.out
-      - cmd: |-
-          go tool cover \
-            -html=coverage.out \
-            -o=coverage.html
+          go tool covdata textfmt -i {{ .coverage }} -o coverage.out
+          go tool cover -html coverage.out -o coverage.html
         silent: true
 
-  synth:
+  get:
     aliases:
-      - s
+      - init
+    desc: Get and process the Terraform bindings
+    summary: |-
+      Get and process the Terraform Provider and Terraform Module bindings for
+      the Infrastructure as Code.
+    sources:
+      - 'cdktf.json'
+    cmds:
+      - cmd: ../node_modules/.bin/cdktf get
+
+  synth:
     desc: Build the Infrastucture as Code
     summary: |-
       Build and run the CDKTF application to synthesise the Terraform JSON
       Infrastructure as Code for testing or deployment.
     deps:
+      - task: get
       - task: lint
+    sources:
+      - 'cdktf.json'
+      - '**/*.go'
     cmds:
-      - cmd: echo "synthesising..."
+      - cmd: mkdir -p ../{}
+        silent: true
+      - cmd: ../node_modules/.bin/cdktf get --output {{ .deploy }}
 
   # plan does not require synth as a dependency as plan will re-run the
   # synthesis of the IaC when it runs anyway
-  plan:
+  diff:
     aliases:
-      - p
-    desc: Plan the Infrastucture as Code
+      - plan
+    desc: Create a diff (plan) for the Infrastucture as Code
     summary: |-
       Build and run the CDKTF application to synthesise the Terraform JSON
-      Infrastructure as Code, then run a plan against it to show the expected
-      changes to the infrastructure.
+      Infrastructure as Code, then run a diff against it to show the expected
+      changes to the infrastructure (i.e. a plan).
     deps:
+      - task: get
       - task: lint
+    sources:
+      - 'cdktf.json'
+      - '**/*.go'
     cmds:
-      - cmd: echo "synthesising..."
+      - cmd: mkdir -p {{ .deploy }}
+        silent: true
+      - cmd: ../node_modules/.bin/cdktf diff --output {{ .deploy }}
 
   deploy:
     aliases:
-      - s
+      - apply
     desc: Deploy the Infrastucture as Code
     summary: |-
       Build and run the CDKTF application to synthesise the Terraform JSON
       Infrastructure as Code, then run a deploy against it to deploy the changes
       to the infrastructure to the environments.
     deps:
+      - task: get
+      - task: lint
+    sources:
+      - 'cdktf.json'
+      - '**/*.go'
+    cmds:
+      - cmd: mkdir -p {{ .deploy }}
+        silent: true
+      - cmd: ../node_modules/.bin/cdktf deploy --output {{ .deploy }}
+
+  destroy:
+    desc: Deploy the Infrastucture as Code
+    summary: |-
+      Build and run the CDKTF application to synthesise the Terraform JSON
+      Infrastructure as Code, then run a deploy against it to deploy the changes
+      to the infrastructure to the environments.
+    deps:
+      - task: get
       - task: lint
     cmds:
-      - cmd: echo "synthesising..."
+      - cmd: mkdir -p {{ .deploy }}
+        silent: true
+      - cmd: ../node_modules/.bin/cdktf destroy --output {{ .deploy }}
 
   clean:
-    aliases:
-      - c
-    desc: Clean up the Infrastructure temporary files and directories
+    desc: Clean up the temporary files and directories for CDKTF and the Stacks
     summary: |-
       Clean up any known temporary files and directories within the repository
-      that have been created either via the Infrastruce as Code management with
-      CDKTF.
+      that have been created either via CDKTF for the Infrastruce as Code and
+      the Stacks.
     run: once
     cmds:
-      - cmd: rm -rf coverage/*/* coverage.out coverage.html
+      - cmd: rm -rf {{ .deploy }}
+      - cmd: rm -rf {{ .coverage }} coverage.{out,html}
       - cmd: rm -rf .task

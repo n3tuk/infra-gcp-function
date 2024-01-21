@@ -8,10 +8,14 @@ node_modules
 .prettier.cache
 
 # Ignore function processing files
-function/coverage.out
-function/coverage.html
+**/coverage.out
+**/coverage.html
+
+# Ignore Terraform state files
+*.tfstate
+*.tfstate.backup
 
 # Ignore CDKTF processing directories
 infra/.gen/*
 infra/generated/*
-deploy/*
+dist/*

@@ -155,4 +155,7 @@ linters:
     - varnamelen
 
 run:
-  timeout: 1m
+  skip-dirs:
+    - generated
+  skip-dirs-use-default: false
+  timeout: 5m
