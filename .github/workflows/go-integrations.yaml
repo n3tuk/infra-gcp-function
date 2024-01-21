@@ -64,7 +64,19 @@ jobs:
           task lint \
             --output group \
             --output-group-begin '::group::{{ .TASK }}' \
-            --output-group-end '::endgroup::'\
+            --output-group-end '::endgroup::'
+
+      - name: Save CDKTF-genrated Provider bindings
+        if: ${{ matrix.module == 'infra' }}
+        uses: actions/cache/save@v4
+        with:
+          # Save the .task folder alongside the generated folder to allow task
+          # to record the get task as having been already run, enabling this
+          # step to be bypassed where possible in the testing steps below
+          path: |
+            infra/.task
+            infra/generated
+          key: ${{ runner.os }}-${{ matrix.module }}-${{ github.sha }}
 
   testing:
     strategy:
@@ -86,6 +98,15 @@ jobs:
     steps:
       - name: Checkout the Repository
         uses: actions/checkout@v4
+
+      - name: Restore CDKTF-genrated Provider bindings
+        if: ${{ matrix.module == 'infra' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            infra/.task
+            infra/generated
+          key: ${{ runner.os }}-${{ matrix.module }}-${{ github.sha }}
 
       - name: Set up Go v${{ matrix.version }}
         uses: actions/setup-go@v5
