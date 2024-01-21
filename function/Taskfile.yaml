@@ -3,10 +3,12 @@ version: 3
 interval: 1000ms
 output: prefixed
 
+vars:
+  coverage: .coverage
+
 tasks:
   default:
     cmds:
-      - task: build
       - task: test
 
   fmt:
@@ -30,8 +32,6 @@ tasks:
       Lint to GoLang files for the Cloud Function using golangci-lint to check
       the code quality, and run prettier and other linters over any JSON and
       YAML files for the infrastructure code.
-    deps:
-      - task: fmt
     sources:
       - 'main.go'
       - '**/*.go'
@@ -40,16 +40,8 @@ tasks:
       - cmd: |-
           golangci-lint run \
             --config=../.golangci.yaml \
-            --path-prefix=function
-
-  build:
-    desc: Build the Cloud Function
-    summary: |-
-      Build the Cloud Function so it can be tested or packaged.
-    deps:
-      - task: lint
-    cmds:
-      - cmd: echo "building..."
+            --path-prefix=function \
+            --verbose
 
   test:
     aliases:
@@ -58,8 +50,6 @@ tasks:
     summary: |-
       Test the Cloud Function via Unit Tests to validate that is will operate as
       expected.
-    deps:
-      - task: build
     sources:
       - '**/*.go'
     cmds:
@@ -69,18 +59,21 @@ tasks:
       # Stops me accidentally looking at the old tests and wondering why the fix
       # didn't work!
       - cmd: |-
-          test -n "$TMUX_PANE" && tmux send-keys -t $TMUX_PANE Enter
+          ( test -n "$TMUX_PANE" \
+            && tmux send-keys -t $TMUX_PANE Enter
+          ) || true
         silent: true
-      - cmd: mkdir -p .coverage
+      - cmd: |-
+          mkdir -p {{ .coverage }}
         silent: true
       - cmd: |-
           go test -v -cover ./... \
-            -args -test.gocoverdir="{{ .TASKFILE_DIR }}/.coverage"
+            -args -test.gocoverdir="{{ .TASKFILE_DIR }}/{{ .coverage }}"
       - cmd: |-
-          go tool covdata func -i .coverage
+          go tool covdata func -i {{ .coverage }}
       # Convert all the data into an HTML page for easy viewing of code coverage
       - cmd: |-
-          go tool covdata textfmt -i .coverage -o coverage.out
+          go tool covdata textfmt -i {{ .coverage }} -o coverage.out
           go tool cover -html coverage.out -o coverage.html
         silent: true
 
@@ -91,6 +84,7 @@ tasks:
     summary: |-
       Start and serve the Cloud Function locally so it can be accessed for testing.
     deps:
+      - task: lint
       - task: test
     sources:
       - '**/*.go'
@@ -98,7 +92,8 @@ tasks:
       FUNCTION_TARGET: server
       LOCAL_ONLY: true
     cmds:
-      - cmd: go run cmd/main.go
+      - cmd: |-
+          go run cmd/main.go
 
   clean:
     desc: Clean up the temporary files and directories for the Cloud Function
@@ -107,5 +102,5 @@ tasks:
       that have been created either by the Cloud Function development.
     run: once
     cmds:
-      - cmd: rm -rf .coverage coverage.{out,html}
+      - cmd: rm -rf {{ .coverage }} coverage.{out,html}
       - cmd: rm -rf .task

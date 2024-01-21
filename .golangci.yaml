@@ -157,5 +157,6 @@ linters:
 run:
   skip-dirs:
     - generated
+    - infra/generated
   skip-dirs-use-default: false
-  timeout: 5m
+  timeout: 10m

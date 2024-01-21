@@ -7,9 +7,11 @@ node_modules
 # Ignore the prettier cache
 .prettier.cache
 
-# Ignore function processing files
+# Ignore Go processing files
+**/.coverage
 **/coverage.out
 **/coverage.html
+**/report.xml
 
 # Ignore Terraform state files
 *.tfstate

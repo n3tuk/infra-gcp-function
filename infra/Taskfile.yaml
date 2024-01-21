@@ -9,15 +9,14 @@ vars:
   coverage: .coverage
   modules:
     sh: |-
-      go list ./... \
+      go list ./... 2>/dev/null \
       | grep -v infra/generated \
       | sed -e 's|^{{ .base }}/||'
 
 tasks:
   default:
     cmds:
-      - task: lint
-      - task: plan
+      - task: test
 
   fmt:
     aliases:
@@ -27,8 +26,10 @@ tasks:
       Properly format all of the .go files for the CDKTF Infrastructure as Code
       using go (this is a write-based action which will make changes to all .go
       files, if required).
-    # Configure both the sources and the command to exclude the pre-generated
-    # modules created by CDKTF as there is no need to run fmt against this code
+    # Configure the sources to exclude counting the pre-generated code created
+    # by CDKTF as triggers, as there is no need to run fmt against this code.
+    deps:
+      - task: get
     sources:
       - '**/*.go'
       - exclude: 'generated/**/*.go'
@@ -36,7 +37,8 @@ tasks:
       - for:
           var: modules
           as: module
-        cmd: go fmt {{.base }}/{{ .module }}
+        cmd: |-
+          go fmt {{.base }}/{{ .module }}
 
   lint:
     aliases:
@@ -47,9 +49,9 @@ tasks:
       check the code quality, and run prettier and other linters over any JSON
       and YAML files for the infrastructure code.
     deps:
-      - task: fmt
-    # Like for the fmt task above, ensure we do not process anything under the
-    # pre-generated modules created by CDKTF, as these do not need to be checked
+      - task: get
+    # Like for the fmt task above, ensure we do not count changes due to the
+    # pre-generated code created by CDKTF, as these do not need to be checked.
     sources:
       - '../.golangci.yaml'
       - '**/*.go'
@@ -57,7 +59,9 @@ tasks:
     cmds:
       - cmd: |-
           golangci-lint run \
-            --config=../.golangci.yaml --path-prefix=infra
+            --config=../.golangci.yaml \
+            --path-prefix=infra \
+            --verbose
 
   test:
     aliases:
@@ -67,18 +71,26 @@ tasks:
       Test the CDKTF Infrastructure as Code to validation that is will operate
       as expected.
     deps:
-      - task: lint
+      # There is not dependency on linting for this task, as may normally be the
+      # case, as linting requires processing all Provider bindings and can take
+      # a long time to complete, needlessly delaying this step in CI.
+      - task: get
+    # Include the pre-generated code from CDKTF as triggers; we want to be able
+    # to test changes against this code, as well as changes to this code as too.
     sources:
       - '**/*.go'
     cmds:
-      # If this taskfile is being run inside of tmux, tell tmux to send the
-      # Enter key to the same pane as this is running in so that it exits
-      # scrolling mode as the new tests are run.
-      # Stops me accidentally looking at the old tests and wondering why the fix
-      # didn't work!
-      - cmd: test -n "$TMUX_PANE" && tmux send-keys -t $TMUX_PANE Enter
+      # If this task is being run inside of tmux, tell tmux to send the Enter
+      # key to the same pane this is running in so that it exits scrolling mode
+      # as the new tests are run. This can, at times, leave a rouge empty-line
+      # in the output, but it ensures the latest tests are shown as they run.
+      - cmd: |-
+          ( test -n "$TMUX_PANE" \
+            && tmux send-keys -t $TMUX_PANE Enter
+          ) || true
         silent: true
-      - cmd: mkdir -p {{ .coverage }}
+      - cmd: |-
+          mkdir -p {{ .coverage }}
         silent: true
       - for:
           var: modules
@@ -104,7 +116,8 @@ tasks:
     sources:
       - 'cdktf.json'
     cmds:
-      - cmd: ../node_modules/.bin/cdktf get
+      - cmd: |-
+          ../node_modules/.bin/cdktf get
 
   synth:
     desc: Build the Infrastucture as Code
@@ -112,18 +125,20 @@ tasks:
       Build and run the CDKTF application to synthesise the Terraform JSON
       Infrastructure as Code for testing or deployment.
     deps:
+      # There is no dependency on linting nor testing for this task as both of
+      # these can take a long time to process due to the Provider bindings.
       - task: get
-      - task: lint
     sources:
       - 'cdktf.json'
       - '**/*.go'
     cmds:
-      - cmd: mkdir -p ../{}
+      - cmd: |-
+          mkdir -p {{ .deploy }}
         silent: true
-      - cmd: ../node_modules/.bin/cdktf get --output {{ .deploy }}
+      - cmd: |-
+          ../node_modules/.bin/cdktf get \
+            --output {{ .deploy }}
 
-  # plan does not require synth as a dependency as plan will re-run the
-  # synthesis of the IaC when it runs anyway
   diff:
     aliases:
       - plan
@@ -133,15 +148,18 @@ tasks:
       Infrastructure as Code, then run a diff against it to show the expected
       changes to the infrastructure (i.e. a plan).
     deps:
-      - task: get
-      - task: lint
+      - task: synth
     sources:
       - 'cdktf.json'
       - '**/*.go'
     cmds:
-      - cmd: mkdir -p {{ .deploy }}
+      - cmd: |-
+          mkdir -p {{ .deploy }}
         silent: true
-      - cmd: ../node_modules/.bin/cdktf diff --output {{ .deploy }}
+      - cmd: |-
+          ../node_modules/.bin/cdktf diff \
+            --skip-synth \
+            --output {{ .deploy }}
 
   deploy:
     aliases:
@@ -152,15 +170,19 @@ tasks:
       Infrastructure as Code, then run a deploy against it to deploy the changes
       to the infrastructure to the environments.
     deps:
-      - task: get
-      - task: lint
+      - task: synth
     sources:
       - 'cdktf.json'
       - '**/*.go'
     cmds:
-      - cmd: mkdir -p {{ .deploy }}
+      - cmd: |-
+          mkdir -p {{ .deploy }}
         silent: true
-      - cmd: ../node_modules/.bin/cdktf deploy --output {{ .deploy }}
+      - cmd: |-
+          ../node_modules/.bin/cdktf deploy \
+            --skip-synth \
+            --auto-approve \
+            --output {{ .deploy }}
 
   destroy:
     desc: Deploy the Infrastucture as Code
@@ -169,12 +191,17 @@ tasks:
       Infrastructure as Code, then run a deploy against it to deploy the changes
       to the infrastructure to the environments.
     deps:
-      - task: get
-      - task: lint
+      # Although this is a destroy step, just like normal HCL-based Terraform
+      # configurations, we need the configuration of the Providers in order to
+      # connect to the endpoints and destroy those resources in the state file.
+      - task: synth
     cmds:
-      - cmd: mkdir -p {{ .deploy }}
+      - cmd: |-
+          mkdir -p {{ .deploy }}
         silent: true
-      - cmd: ../node_modules/.bin/cdktf destroy --output {{ .deploy }}
+      - cmd: |-
+          ../node_modules/.bin/cdktf destroy \
+            --output {{ .deploy }}
 
   clean:
     desc: Clean up the temporary files and directories for CDKTF and the Stacks
