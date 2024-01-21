@@ -1,4 +1,10 @@
 {
+  "name": "infra-gcp-function",
+  "description": "A simple test Google Cloud Function for personal development and understanding",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0 <21.0.0"
+  },
   "devDependencies": {
     "prettier": "^3.2.4",
     "prettier-plugin-go-template": "^0.0.15"
