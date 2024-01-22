@@ -20,11 +20,9 @@ jobs:
         module:
           - 'function'
           - 'infra'
-        platform:
-          - ubuntu-latest
       fail-fast: false
 
-    name: golangci Linting
+    name: Linting
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repository
@@ -34,7 +32,10 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: ${{ matrix.module }}/go.mod
-          cache-dependency-path: ${{ matrix.module }}/go.sum
+          check-latest: true
+          cache-dependency-path: |
+            .bingo/*.sum
+            ${{ matrix.module }}/go.sum
 
       - name: Set up NodeJS
         uses: actions/setup-node@v4
@@ -44,19 +45,51 @@ jobs:
           cache: yarn
           cache-dependency-path: yarn.lock
 
-      - name: Install the bingo tool
+      - name: Cache the Terraform Provider bindings
+        id: cdktf
+        if: ${{ matrix.module == 'infra' }}
+        uses: actions/cache@v4
+        with:
+          # Save the .task folder alongside the generated folder to allow task
+          # to record the get task as having been already run, enabling this
+          # step to be bypassed where possible in the testing steps below
+          path: |
+            infra/.task
+            infra/generated
+          key: cache-cdktf-${{ matrix.module }}-${{ hashFiles('infra/cdktf.json') }}
+
+      - name: Cache the Yarn modules
+        id: yarn
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+          key: cache-yarn-root-${{ hashFiles('yarn.lock') }}
+
+      - name: Install the bingo Go tool
         run: |-
           go install \
             github.com/bwplotka/bingo@latest
 
       - name: Install the required Go tools
-        run: bingo get --link
+        run: |-
+          bingo get --link
 
-      - name: Install CDKTF and the required NodeJS tools
+      - name: Install the required NodeJS tools
+        if: ${{ steps.yarn.outputs.cache-hit != 'true' }}
         run: |-
           yarn install \
             --ignore-engines \
             --no-progress
+
+      - name: Build the Terraform Provider bindings
+        if: ${{ matrix.module == 'infra' && steps.cdktf.outputs.cache-hit != 'true' }}
+        working-directory: ${{ matrix.module }}
+        run: |-
+          task get \
+            --output group \
+            --output-group-begin '::group::{{ .TASK }}' \
+            --output-group-end '::endgroup::'
 
       - name: Lint the ${{ matrix.module }} Go module
         working-directory: ${{ matrix.module }}
@@ -66,17 +99,60 @@ jobs:
             --output-group-begin '::group::{{ .TASK }}' \
             --output-group-end '::endgroup::'
 
-      - name: Save CDKTF-genrated Provider bindings
-        if: ${{ matrix.module == 'infra' }}
-        uses: actions/cache/save@v4
+  prettier:
+    name: Prettier
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          # Save the .task folder alongside the generated folder to allow task
-          # to record the get task as having been already run, enabling this
-          # step to be bypassed where possible in the testing steps below
+          go-version-file: infra/go.mod
+          check-latest: true
+          cache-dependency-path: |
+            .bingo/*.sum
+            infra/go.sum
+
+      - name: Set up NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          check-latest: true
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - name: Cache the Yarn modules
+        id: yarn
+        uses: actions/cache@v4
+        with:
           path: |
-            infra/.task
-            infra/generated
-          key: ${{ runner.os }}-${{ matrix.module }}-${{ github.sha }}
+            node_modules
+          key: cache-yarn-root-${{ hashFiles('yarn.lock') }}
+
+      - name: Install the bingo Go tool
+        run: |-
+          go install \
+            github.com/bwplotka/bingo@latest
+
+      - name: Install the required Go tools
+        run: |-
+          bingo get --link
+
+      - name: Install the required NodeJS tools
+        if: ${{ steps.yarn.outputs.cache-hit != 'true' }}
+        run: |-
+          yarn install \
+            --ignore-engines \
+            --no-progress
+
+      - name: Lint with Prettier
+        run: |-
+          task prettier \
+            --output group \
+            --output-group-begin '::group::{{ .TASK }}' \
+            --output-group-end '::endgroup::'
 
   testing:
     strategy:
@@ -87,32 +163,25 @@ jobs:
         module:
           - 'function'
           - 'infra'
-        platform:
-          - 'ubuntu-latest'
       fail-fast: false
     needs:
       - linting
+      - prettier
 
-    name: Go Tests
-    runs-on: ${{ matrix.platform }}
+    name: Testing
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout the Repository
         uses: actions/checkout@v4
 
-      - name: Restore CDKTF-genrated Provider bindings
-        if: ${{ matrix.module == 'infra' }}
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            infra/.task
-            infra/generated
-          key: ${{ runner.os }}-${{ matrix.module }}-${{ github.sha }}
-
       - name: Set up Go v${{ matrix.version }}
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ matrix.version }}
-          cache-dependency-path: ${{ matrix.module }}/go.sum
+          go-version-file: ${{ matrix.module }}/go.mod
+          check-latest: true
+          cache-dependency-path: |
+            .bingo/*.sum
+            ${{ matrix.module }}/go.sum
 
       - name: Set up NodeJS
         uses: actions/setup-node@v4
@@ -122,7 +191,31 @@ jobs:
           cache: yarn
           cache-dependency-path: yarn.lock
 
-      - name: Install the bingo tool
+      - name: Cache the Terraform Provider bindings
+        id: cdktf
+        if: ${{ matrix.module == 'infra' }}
+        uses: actions/cache@v4
+        with:
+          # Save the .task folder alongside the generated folder to allow task
+          # to record the get task as having been already run, enabling this
+          # step to be bypassed where possible in the testing steps below
+          path: |
+            infra/.task
+            infra/generated
+          key: cache-cdktf-${{ matrix.module }}-${{ hashFiles('infra/cdktf.json') }}
+
+      - name: Cache the Yarn modules
+        id: yarn
+        uses: actions/cache@v4
+        with:
+          # Save the .task folder alongside the generated folder to allow task
+          # to record the get task as having been already run, enabling this
+          # step to be bypassed where possible in the testing steps below
+          path: |
+            node_modules
+          key: cache-yarn-root-${{ hashFiles('yarn.lock') }}
+
+      - name: Install the bingo Go tool
         run: |-
           go install \
             github.com/bwplotka/bingo@latest
@@ -131,7 +224,8 @@ jobs:
         run: |-
           bingo get --link
 
-      - name: Install CDKTF and the required NodeJS tools
+      - name: Install the required NodeJS tools
+        if: ${{ steps.yarn.outputs.cache-hit != 'true' }}
         run: |-
           yarn install \
             --ignore-engines \
@@ -143,4 +237,4 @@ jobs:
           task test \
             --output group \
             --output-group-begin '::group::{{ .TASK }}' \
-            --output-group-end '::endgroup::'\
+            --output-group-end '::endgroup::'
