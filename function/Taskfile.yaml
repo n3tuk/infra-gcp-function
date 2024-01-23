@@ -4,7 +4,12 @@ interval: 1000ms
 output: prefixed
 
 vars:
+  base: github.com/n3tuk/infra-gcp-function
   coverage: .coverage
+  modules:
+    sh: |-
+      go list ./... 2>/dev/null \
+      | sed -e 's|^{{ .base }}/||'
 
 tasks:
   default:
@@ -52,6 +57,8 @@ tasks:
       expected.
     sources:
       - '**/*.go'
+    env:
+      GIN_MODE: test
     cmds:
       # If this taskfile is being run inside of tmux, tell tmux to send the
       # Enter key to the same pane as this is running in so that it exits
@@ -66,8 +73,11 @@ tasks:
       - cmd: |-
           mkdir -p {{ .coverage }}
         silent: true
-      - cmd: |-
-          go test -v -cover ./... \
+      - for:
+          var: modules
+          as: module
+        cmd: |-
+          go test -v -cover {{.base }}/{{ .module }} \
             -args -test.gocoverdir="{{ .TASKFILE_DIR }}/{{ .coverage }}"
       - cmd: |-
           go tool covdata func -i {{ .coverage }}
@@ -91,6 +101,7 @@ tasks:
     env:
       FUNCTION_TARGET: server
       LOCAL_ONLY: true
+      GIN_MODE: release
     cmds:
       - cmd: |-
           go run cmd/main.go
