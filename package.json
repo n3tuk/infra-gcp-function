@@ -11,6 +11,6 @@
     "prettier-plugin-go-template": "^0.0.15"
   },
   "dependencies": {
-    "cdktf-cli": "^0.20.9"
+    "cdktf-cli": "^0.20.10"
   }
 }
